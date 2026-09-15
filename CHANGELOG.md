@@ -1,12 +1,23 @@
 # CHANGELOG
 
 
+## v0.2.1 (2026-09-15)
+
+### Bug Fixes
+
+- Keep argparse internals out of the help
+  ([`d0035a3`](https://github.com/maclav3/push-to-speech-to-text/commit/d0035a3b69c4ebb6bf4fc1ea500fbafe8a2bf9fd))
+
+Argparse prints help=SUPPRESS literally for a subcommand, so the internal meter command showed up as
+  "==SUPPRESS==". A subcommand with no help text is left out of the list instead.
+
+
 ## v0.2.0 (2026-09-15)
 
 ### Documentation
 
 - Describe the recording indicator
-  ([`a4b14f8`](https://github.com/maclav3/push-to-speech-to-text/commit/a4b14f8f8a657a56e4e93599f4ea46ecf6ad20b0))
+  ([`852f89b`](https://github.com/maclav3/push-to-speech-to-text/commit/852f89b090b4ef900b71a736d2c69b957e9e4735))
 
 The README now says what the meter looks like and why it is a notification rather than a floating
   window. A flat bar means the wrong microphone, so that gets a line too.
@@ -14,7 +25,7 @@ The README now says what the meter looks like and why it is a notification rathe
 ### Features
 
 - Measure the recording level and draw it as blocks
-  ([`a8d3178`](https://github.com/maclav3/push-to-speech-to-text/commit/a8d31788da785ebfd68e8a00d60f164ff8724f8e))
+  ([`8a4cff9`](https://github.com/maclav3/push-to-speech-to-text/commit/8a4cff91c16b723810c8e5d47d613f13f8449a20))
 
 The meter reads the tail of the file the recorder is already writing, so it needs no second capture
   stream and cannot disturb the recording.
@@ -23,7 +34,7 @@ Loudness is reported in decibels against a floor of -50 dB. A linear scale barel
   because the ear hears loudness logarithmically.
 
 - Show a live level meter while recording
-  ([`436c05a`](https://github.com/maclav3/push-to-speech-to-text/commit/436c05a9f1492df5f9a8cdc05649d515c75e01e4))
+  ([`6a360a8`](https://github.com/maclav3/push-to-speech-to-text/commit/6a360a8dc393dbc8fedf173cda60b30c3b955eda))
 
 GNOME draws its own notifications above every window, which is the only way an ordinary program can
   put something on top on Wayland. The meter redraws one critical notification about eight times a
@@ -35,7 +46,7 @@ The meter runs in its own process beside the recorder, because the start command
 ### Refactoring
 
 - Extract BackgroundProcess from Recorder
-  ([`6df6d81`](https://github.com/maclav3/push-to-speech-to-text/commit/6df6d81f7f70841fd8f7ca5017a185c89d1c6830))
+  ([`95ee6ae`](https://github.com/maclav3/push-to-speech-to-text/commit/95ee6ae440896bd5cf39fe8b0ef6b9988fa6b694))
 
 The recorder tracks a detached process through a PID file. The recording indicator needs the same
   handling, so the mechanism moves into its own class rather than being written twice.
@@ -49,7 +60,7 @@ Recorder keeps only what is specific to it: the arecord command line, and what c
 ### Chores
 
 - Relicense under the GPL version 3 or later
-  ([`b4b0be6`](https://github.com/maclav3/push-to-speech-to-text/commit/b4b0be692b56a0add8087472b20e4d377c88e5d6))
+  ([`986ac0e`](https://github.com/maclav3/push-to-speech-to-text/commit/986ac0e240e0c83317cd9f5b4af4ca5c4fb6a674))
 
 A changed version of this tool must now stay open. MIT allowed anyone to take it closed, which is
   not what I want for it.
@@ -65,7 +76,7 @@ The SPDX licence field needs setuptools 77, so the build requirement moves up wi
 ### Build System
 
 - Add ruff and a Taskfile for local checks
-  ([`0a3fc3a`](https://github.com/maclav3/push-to-speech-to-text/commit/0a3fc3ae8578bfdb71288df2537d8c541f14b47c))
+  ([`cb69580`](https://github.com/maclav3/push-to-speech-to-text/commit/cb69580f25d54320550e057d8ef81e03667e12b9))
 
 Task gives the same entry points as my other Python projects: venv, fmt, lint and install. The check
   task runs what CI runs, so a failure shows up before the push.
@@ -76,13 +87,13 @@ Ruff replaces both black and flake8 here. One tool covers formatting and linting
 ### Code Style
 
 - Format the code with ruff
-  ([`11ed11c`](https://github.com/maclav3/push-to-speech-to-text/commit/11ed11c17e0cfabceb8ae17361af7d2969e605d5))
+  ([`3bf61c1`](https://github.com/maclav3/push-to-speech-to-text/commit/3bf61c15b230fcba4d7442b997a7f5161c5b0390))
 
 Mechanical. The only hand edit is a nested with statement in the recorder tests, which ruff combined
   into one parenthesised block.
 
 - Keep each arecord flag next to its value
-  ([`ed8db73`](https://github.com/maclav3/push-to-speech-to-text/commit/ed8db730038d5dfd8ac8b38959b31fe076ee9272))
+  ([`f51fa44`](https://github.com/maclav3/push-to-speech-to-text/commit/f51fa44e26fbe12db89eaba6aa1cf867a321bf6f))
 
 The formatter split the argument list into one item per line, which separated every flag from the
   value it takes. Building the list in pairs reads the same way the command line does, and the
@@ -91,7 +102,7 @@ The formatter split the argument list into one item per line, which separated ev
 ### Continuous Integration
 
 - Release with python-semantic-release
-  ([`a3d2818`](https://github.com/maclav3/push-to-speech-to-text/commit/a3d2818433b59fa8f36e0ffbde81c5a7c4a169e3))
+  ([`5e64382`](https://github.com/maclav3/push-to-speech-to-text/commit/5e64382991dedb2f32e097d72898911df9c0e5bf))
 
 A push to main now derives the next version from the commit messages, writes the changelog and tags
   the release. The tag table matches my other Python project, so the same commit style produces the
@@ -101,7 +112,7 @@ The version lives in two files. Semantic release keeps pyproject.toml and the pa
   step, so they cannot drift.
 
 - Run lint and tests on a Python matrix
-  ([`33753d5`](https://github.com/maclav3/push-to-speech-to-text/commit/33753d52259061be02cb1e2f9b9c163d8423aba1))
+  ([`4e3c374`](https://github.com/maclav3/push-to-speech-to-text/commit/4e3c37436eb788dab2ca14317af53d92b07a937d))
 
 The build job installs the package the way a user does, then lints, runs the tests and calls the
   console script. Installing rather than importing from the checkout means the job also proves the
@@ -112,14 +123,14 @@ Local and CI checks now match, because task lint gained the same format check.
 ### Documentation
 
 - Describe the uinput permission precisely
-  ([`7093814`](https://github.com/maclav3/push-to-speech-to-text/commit/70938148269af3d3cee997abcf0ad8cdf1f5b6fd))
+  ([`8e975e8`](https://github.com/maclav3/push-to-speech-to-text/commit/8e975e8d308230465908044705adbfe2db2e443c))
 
 The note claimed that setup exposes every input device. It does not. Reading input devices comes
   from membership of the input group, which most desktops grant already. Setup only adds write
   access to /dev/uinput, which allows typing, not reading.
 
 - Document the pipx install and the development tasks
-  ([`6c175d8`](https://github.com/maclav3/push-to-speech-to-text/commit/6c175d89c054a0810af1e43f211315b8f6517921))
+  ([`6f60f3f`](https://github.com/maclav3/push-to-speech-to-text/commit/6f60f3f2c477cbf4cb4c7cfb24c88acff7cee428))
 
 The install line now points at the git URL, so the README works for someone who has not cloned the
   repository. The development section lists the tasks and says which checks CI runs.
@@ -129,7 +140,7 @@ Commit messages drive the release, so the section asks for conventional commits.
 ### Features
 
 - Add push-to-stt, hotkey dictation for Linux
-  ([`0327afe`](https://github.com/maclav3/push-to-speech-to-text/commit/0327afe45476678cb266cf12589fe79a772a5d6d))
+  ([`e59a68a`](https://github.com/maclav3/push-to-speech-to-text/commit/e59a68a39caa210214a5ba3629a6a5fd5efef90b))
 
 A hotkey starts arecord, a second press stops it. faster-whisper transcribes the recording and
   ydotool types the result into the focused field.
@@ -147,7 +158,7 @@ The tests replace subprocess and os.kill, so the suite needs no microphone, no k
 ### Refactoring
 
 - Move the package under src/
-  ([`5488a05`](https://github.com/maclav3/push-to-speech-to-text/commit/5488a05cb37d78f2af1459f60b5a64159cd498f2))
+  ([`7ecca4e`](https://github.com/maclav3/push-to-speech-to-text/commit/7ecca4e291b422cf3bc013713a605f820d0bb692))
 
 The src layout keeps the package off sys.path when running from the checkout. The tests then import
   the installed package, which is what users get, instead of the source tree next to them.
