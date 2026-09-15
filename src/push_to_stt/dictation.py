@@ -83,17 +83,11 @@ class Recorder:
         if self.settings.audio_device:
             command += ["--device", self.settings.audio_device]
         # Whisper wants 16 kHz mono, so record that and skip a conversion step.
-        command += [
-            "--format",
-            "S16_LE",
-            "--rate",
-            str(SAMPLE_RATE),
-            "--channels",
-            "1",
-            "--file-type",
-            "wav",
-            str(self.settings.wav_file),
-        ]
+        command += ["--format", "S16_LE"]
+        command += ["--rate", str(SAMPLE_RATE)]
+        command += ["--channels", "1"]
+        command += ["--file-type", "wav"]
+        command.append(str(self.settings.wav_file))
         return command
 
 
