@@ -74,6 +74,7 @@ press arrives in a new process. A PID file in `$XDG_RUNTIME_DIR` joins the two.
 ## Test
 
 ```bash
+pip install -e .
 python3 -m unittest discover -s tests -t .
 ```
 

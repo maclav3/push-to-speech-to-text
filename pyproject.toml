@@ -14,5 +14,5 @@ push-to-stt = "push_to_stt.cli:main"
 requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools]
-packages = ["push_to_stt"]
+[tool.setuptools.packages.find]
+where = ["src"]
