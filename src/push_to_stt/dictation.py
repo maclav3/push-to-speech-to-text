@@ -4,80 +4,43 @@
 
 from __future__ import annotations
 
-import os
-import signal
 import subprocess
-import time
 from pathlib import Path
 
 from . import DictationError, missing_program
+from .background import BackgroundProcess
 from .config import SAMPLE_RATE, Settings
-
-STOP_TIMEOUT = 5.0
 
 
 class Recorder:
-    """A detached arecord process, tracked through a PID file.
-
-    The process must outlive the command that starts it, because the next hotkey
-    press arrives in a new process. The PID file is the handover between the two.
-    """
+    """The arecord process that captures one dictation."""
 
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
-
-    @property
-    def pid(self) -> int | None:
-        try:
-            pid = int(self.settings.pid_file.read_text())
-        except (OSError, ValueError):
-            return None
-        if not _process_alive(pid):
-            self.settings.pid_file.unlink(missing_ok=True)
-            return None
-        return pid
+        self.process = BackgroundProcess(settings.pid_file)
 
     @property
     def is_recording(self) -> bool:
-        return self.pid is not None
+        return self.process.is_running
 
     def start(self) -> None:
         if self.is_recording:
             raise DictationError("Already recording.")
-        self.settings.state_dir.mkdir(parents=True, exist_ok=True)
+        self.settings.wav_file.parent.mkdir(parents=True, exist_ok=True)
         self.settings.wav_file.unlink(missing_ok=True)
-        try:
-            process = subprocess.Popen(
-                self._arecord_command(),
-                start_new_session=True,
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-        except FileNotFoundError:
-            raise missing_program("arecord") from None
-        self.settings.pid_file.write_text(str(process.pid))
+        self.process.start(self._arecord_command())
 
     def stop(self) -> Path:
         """End the recording and return the path of the WAV file."""
-        pid = self.pid
-        if pid is None:
+        if not self.process.stop():
             raise DictationError("Not recording.")
-        # SIGINT makes arecord write the final WAV header. SIGKILL would not.
-        os.kill(pid, signal.SIGINT)
-        _wait_for_exit(pid)
-        self.settings.pid_file.unlink(missing_ok=True)
         wav = self.settings.wav_file
         if not wav.exists() or wav.stat().st_size == 0:
             raise DictationError("No audio was recorded.")
         return wav
 
     def cancel(self) -> None:
-        pid = self.pid
-        if pid is not None:
-            os.kill(pid, signal.SIGINT)
-            _wait_for_exit(pid)
-            self.settings.pid_file.unlink(missing_ok=True)
+        self.process.stop()
         self.settings.wav_file.unlink(missing_ok=True)
 
     def _arecord_command(self) -> list[str]:
@@ -120,20 +83,3 @@ def type_text(text: str) -> None:
         raise DictationError(
             "ydotool cannot type. Check /dev/uinput access with: push-to-stt setup"
         )
-
-
-def _process_alive(pid: int) -> bool:
-    try:
-        os.kill(pid, 0)
-    except OSError:
-        return False
-    return True
-
-
-def _wait_for_exit(pid: int, timeout: float = STOP_TIMEOUT) -> None:
-    """Wait for a process that is not our child, so os.wait cannot be used."""
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        if not _process_alive(pid):
-            return
-        time.sleep(0.05)

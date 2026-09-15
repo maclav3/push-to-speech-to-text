@@ -10,20 +10,7 @@ from push_to_stt import DictationError
 from push_to_stt.config import Settings
 from push_to_stt.dictation import Recorder, type_text
 
-
-class FakeProcessTable:
-    """Stands in for os.kill, so no real process is started or signalled."""
-
-    def __init__(self) -> None:
-        self.alive: set[int] = set()
-        self.signals: list[tuple[int, int]] = []
-
-    def kill(self, pid: int, sig: int) -> None:
-        if pid not in self.alive:
-            raise ProcessLookupError(pid)
-        self.signals.append((pid, sig))
-        if sig == signal.SIGINT:
-            self.alive.discard(pid)
+from .fakes import FakeProcessTable
 
 
 class RecorderTest(unittest.TestCase):
@@ -34,12 +21,12 @@ class RecorderTest(unittest.TestCase):
         self.table = FakeProcessTable()
         self.recorder = Recorder(self.settings)
 
-        kill = mock.patch("push_to_stt.dictation.os.kill", self.table.kill)
+        kill = mock.patch("push_to_stt.background.os.kill", self.table.kill)
         kill.start()
         self.addCleanup(kill.stop)
 
         self.popen = mock.patch(
-            "push_to_stt.dictation.subprocess.Popen", side_effect=self.fake_popen
+            "push_to_stt.background.subprocess.Popen", side_effect=self.fake_popen
         ).start()
         self.addCleanup(mock.patch.stopall)
 
@@ -106,17 +93,6 @@ class RecorderTest(unittest.TestCase):
 
     def test_cancel_without_a_recording_does_nothing(self):
         self.recorder.cancel()
-
-    def test_a_stale_pid_file_does_not_count_as_recording(self):
-        self.settings.state_dir.mkdir(parents=True)
-        self.settings.pid_file.write_text("999999")
-        self.assertFalse(self.recorder.is_recording)
-        self.assertFalse(self.settings.pid_file.exists())
-
-    def test_a_damaged_pid_file_does_not_count_as_recording(self):
-        self.settings.state_dir.mkdir(parents=True)
-        self.settings.pid_file.write_text("not a number")
-        self.assertFalse(self.recorder.is_recording)
 
 
 class TypeTextTest(unittest.TestCase):
