@@ -19,3 +19,19 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.semantic_release]
+version_variables = ["src/push_to_stt/__init__.py:__version__"]
+version_toml = ["pyproject.toml:project.version"]
+build_command = "pip install build && python -m build"
+
+[tool.semantic_release.branches.main]
+match = "main"
+prerelease = false
+
+[tool.semantic_release.commit_parser_options]
+major_tags = ["break", "major"]
+minor_tags = ["feat", "minor"]
+patch_tags = ["fix", "perf", "patch", "build", "chore", "ci", "docs", "style", "refactor", "test"]
+allowed_tags = ["feat", "fix", "perf", "build", "chore", "ci", "docs", "style", "refactor", "test", "break", "major", "minor", "patch"]
+default_bump_level = 2
