@@ -6,6 +6,8 @@ Dictate into any text field on Linux. Press a hotkey, speak, press it again.
 
 ```
 hotkey -> arecord -> faster-whisper -> ydotool types into the focused field
+            |
+            +-> a live level meter, on top of your windows
 ```
 
 Whisper runs on your machine. No cloud service, no API key.
@@ -55,6 +57,25 @@ The first transcription downloads the model. Later runs use the cached copy.
 
 `toggle` is the default, so the bare command does the same as `push-to-stt toggle`.
 
+## The recording indicator
+
+While recording, a notification stays on screen and shows the sound level:
+
+```
+Recording
+▁▁▂▃▅▇█▇▅▃▂▁
+```
+
+The bar scrolls, newest on the right, and redraws about eight times a second.
+If it stays flat while you speak, the wrong microphone is selected. Set
+`STT_AUDIO_DEVICE` to choose another one.
+
+The level is read from the recording itself, not from a second capture stream.
+So the meter cannot disturb what Whisper hears.
+
+A notification is used because GNOME draws its own notifications above every
+window. On Wayland an ordinary program cannot place a window on top.
+
 ## Settings
 
 Set these as environment variables.
@@ -76,9 +97,12 @@ A GNOME shortcut does not read your shell profile. Put the variables in
 | `dictation.py` | The `Recorder`, the Whisper call, and the typing |
 | `desktop.py` | Notifications, `/dev/uinput` access, the GNOME hotkey |
 | `cli.py` | Argument parsing and the order of the steps |
+| `meter.py` | The level reading, the bar, and the loop that redraws it |
+| `background.py` | A process that outlives the command which started it |
 
 The recorder must outlive the process that starts it, because the next hotkey
 press arrives in a new process. A PID file in `$XDG_RUNTIME_DIR` joins the two.
+The meter runs the same way, with a PID file of its own.
 
 ## Development
 
@@ -110,6 +134,7 @@ in the [conventional commits](https://www.conventionalcommits.org/) style.
 
 - Each dictation loads the Whisper model again, which costs a second or two. A background service would keep it warm.
 - `wtype` cannot work on GNOME, because Mutter does not offer the virtual keyboard protocol. That is why this uses `ydotool`.
+- The indicator is a notification, so it sits where GNOME puts notifications. A free-floating dot would need a GNOME Shell extension.
 - `setup` gives the `input` group write access to `/dev/uinput`. Any program that runs as you can then type into any window.
 - Many desktops already put you in the `input` group. That membership already allows reading every input device, which is the larger exposure.
 
