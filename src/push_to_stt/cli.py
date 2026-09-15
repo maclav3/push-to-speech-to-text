@@ -79,7 +79,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     setup_parser.add_argument("--hotkey", default=DEFAULT_HOTKEY)
     setup_parser.set_defaults(run=setup)
-    commands.add_parser("meter", help=argparse.SUPPRESS).set_defaults(run=draw_meter)
+    # No help text, so argparse keeps this internal command out of the list.
+    commands.add_parser("meter").set_defaults(run=draw_meter)
     return parser
 
 

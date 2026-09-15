@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest import mock
 
 from push_to_stt import DictationError
-from push_to_stt.cli import main
+from push_to_stt.cli import build_parser, main
 
 
 class CliTest(unittest.TestCase):
@@ -104,6 +104,15 @@ class MeterTest(unittest.TestCase):
         self.recorder.stop.side_effect = DictationError("No audio was recorded.")
         self.assertEqual(main(["stop"]), 1)
         self.meter.stop.assert_called_once()
+
+
+class HelpTest(unittest.TestCase):
+    def test_the_help_never_shows_argparse_internals(self):
+        self.assertNotIn("SUPPRESS", build_parser().format_help())
+
+    def test_the_internal_meter_command_still_works(self):
+        args = build_parser().parse_args(["meter"])
+        self.assertEqual(args.run.__name__, "draw_meter")
 
 
 if __name__ == "__main__":
