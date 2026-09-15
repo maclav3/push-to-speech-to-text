@@ -1,0 +1,46 @@
+version: '3'
+
+vars:
+  VENV_BIN: "{{if eq OS \"windows\"}}.venv/Scripts{{else}}.venv/bin{{end}}"
+  PYTHON: "{{.VENV_BIN}}/python"
+
+tasks:
+  venv:
+    desc: Create a local virtual environment and install development dependencies
+    sources:
+      - pyproject.toml
+    generates:
+      - .venv/bin/activate
+    cmds:
+      - python3 -m venv .venv
+      - "{{.PYTHON}} -m pip install --upgrade pip"
+      - "{{.PYTHON}} -m pip install -e \".[dev]\""
+
+  fmt:
+    desc: Format the code
+    deps: [venv]
+    cmds:
+      - "{{.VENV_BIN}}/ruff format src tests"
+
+  lint:
+    desc: Lint the code
+    deps: [venv]
+    cmds:
+      - "{{.VENV_BIN}}/ruff check src tests"
+
+  test:
+    desc: Run the tests
+    deps: [venv]
+    cmds:
+      - "{{.PYTHON}} -m unittest discover -s tests -t ."
+
+  check:
+    desc: Run every check, as the CI does
+    cmds:
+      - task: lint
+      - task: test
+
+  install:
+    desc: Install the package for development in the current environment
+    cmds:
+      - pip install -e ".[dev]"

@@ -7,6 +7,9 @@ requires-python = ">=3.10"
 license = { text = "MIT" }
 dependencies = ["faster-whisper>=1.0"]
 
+[project.optional-dependencies]
+dev = ["ruff"]
+
 [project.scripts]
 push-to-stt = "push_to_stt.cli:main"
 
