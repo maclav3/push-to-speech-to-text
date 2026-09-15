@@ -1,5 +1,7 @@
 # push-to-speech-to-text
 
+[![CI](https://github.com/maclav3/push-to-speech-to-text/actions/workflows/ci.yml/badge.svg)](https://github.com/maclav3/push-to-speech-to-text/actions/workflows/ci.yml)
+
 Dictate into any text field on Linux. Press a hotkey, speak, press it again.
 
 ```
@@ -22,8 +24,15 @@ So the first press starts the recording and the second press ends it.
 ## Install
 
 ```bash
-pipx install .
+pipx install git+https://github.com/maclav3/push-to-speech-to-text.git
 push-to-stt setup
+```
+
+If you do not have `pipx`, install it first:
+
+```bash
+pip install --user pipx
+pipx ensurepath
 ```
 
 `setup` does two things:
@@ -71,15 +80,31 @@ A GNOME shortcut does not read your shell profile. Put the variables in
 The recorder must outlive the process that starts it, because the next hotkey
 press arrives in a new process. A PID file in `$XDG_RUNTIME_DIR` joins the two.
 
-## Test
+## Development
 
 ```bash
-pip install -e .
-python3 -m unittest discover -s tests -t .
+git clone https://github.com/maclav3/push-to-speech-to-text.git
+cd push-to-speech-to-text
+task venv
 ```
+
+The tasks need [Task](https://taskfile.dev/).
+
+| Task | Effect |
+|---|---|
+| `task venv` | Create `.venv` and install the package with its dev tools |
+| `task fmt` | Format the code with ruff |
+| `task lint` | Check style and formatting |
+| `task test` | Run the tests |
+| `task check` | Lint and test, exactly as CI does |
+| `task install` | Install into the environment you are already in |
 
 The tests replace `subprocess` and `os.kill`, so they need no microphone, no
 keyboard and no model. They run in well under a second.
+
+CI runs the same checks on Python 3.10, 3.11 and 3.12. A push to `main` then
+releases a new version, taken from the commit messages, so please write them
+in the [conventional commits](https://www.conventionalcommits.org/) style.
 
 ## Known limits
 
