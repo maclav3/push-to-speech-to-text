@@ -1,6 +1,59 @@
 # CHANGELOG
 
 
+## v0.2.2 (2026-09-15)
+
+### Bug Fixes
+
+- Run the worker from our own directory
+  ([`4e82d7c`](https://github.com/maclav3/push-to-speech-to-text/commit/4e82d7c0139eb54b96535e2c6e07dfbe449a0833))
+
+onnxruntime fails to open its telemetry database, falls back to SQLite's in-memory database, and
+  writes a file named ":memory:.ses" into the current directory. That left litter in whichever
+  project directory the hotkey fired from.
+
+The worker now runs from the state directory under XDG_RUNTIME_DIR, which the session clears on
+  logout.
+
+### Performance Improvements
+
+- Decode greedily and use every core
+  ([`af7decc`](https://github.com/maclav3/push-to-speech-to-text/commit/af7decca5cdc21253bd7a18422477dbc1af37ab1))
+
+Whisper searched five candidate transcriptions by default. For dictation the first is almost always
+  the one that gets typed, and dropping the other four saves about 0.35 seconds on a short phrase.
+
+Loading now uses every core, which halves the load time on this machine.
+
+Splitting load_model out of transcribe lets a caller load the model in advance and hand it over.
+
+- Load Whisper while you speak
+  ([`f7c8c2d`](https://github.com/maclav3/push-to-speech-to-text/commit/f7c8c2dbdf490a3ddec222c2d96da9bed4e199b8))
+
+Loading the model cost about a second of the wait after the hotkey. The worker now starts loading as
+  soon as the recording begins, so the load finishes while the user is still talking.
+
+Measured on a four second phrase, the wait after the stop press falls from about 3.8 to 2.0 seconds.
+  What remains is transcription itself.
+
+load_model now reports failures as DictationError. The worker writes to /dev/null, so an unwrapped
+  error would kill it without telling anyone.
+
+### Refactoring
+
+- Let a background worker transcribe and type
+  ([`f004de2`](https://github.com/maclav3/push-to-speech-to-text/commit/f004de2cee2359b8317bb8d602504bb5c067471f))
+
+The stop command used to hold the hotkey for the whole of Whisper's work. Now it ends the recording,
+  signals the worker and exits in under 0.2 seconds.
+
+The worker already existed to draw the level meter, so it only gains the work that follows the
+  recording. The meter module is left with the measuring.
+
+Two orderings matter and are covered by tests. Stop must close the recording before signalling, and
+  cancel must delete it before signalling.
+
+
 ## v0.2.1 (2026-09-15)
 
 ### Bug Fixes

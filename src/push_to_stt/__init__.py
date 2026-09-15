@@ -6,7 +6,7 @@ The package drives three outside programs: arecord for the microphone, ydotool
 for the keyboard, and gsettings for the GNOME hotkey. Whisper runs in process.
 """
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 INSTALL_HINTS = {
     "arecord": "Install it with: sudo apt install alsa-utils",
