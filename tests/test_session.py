@@ -32,6 +32,9 @@ class SessionRunTest(unittest.TestCase):
             "push_to_stt.session.time.sleep",
             side_effect=[None, None, KeyboardInterrupt],
         ).start()
+        self.load_model = mock.patch(
+            "push_to_stt.session.load_model", return_value="a loaded model"
+        ).start()
         self.transcribe = mock.patch(
             "push_to_stt.session.transcribe", return_value="hello world"
         ).start()
@@ -82,6 +85,21 @@ class SessionRunTest(unittest.TestCase):
             run(self.settings)
         self.assertFalse(self.settings.wav_file.exists())
 
+    def test_the_model_is_loaded_while_you_speak(self):
+        """Loading costs about a second, which is free if it happens during speech."""
+        run(self.settings)
+        self.assertEqual(self.transcribe.call_args.kwargs["model"], "a loaded model")
+
+    def test_a_failed_load_leaves_transcribe_to_try_again(self):
+        self.load_model.side_effect = RuntimeError("no model file")
+        run(self.settings)
+        self.assertIsNone(self.transcribe.call_args.kwargs["model"])
+
+    def test_nothing_is_loaded_before_the_recording_starts(self):
+        """The load runs in the worker, so the hotkey command never waits for it."""
+        run(self.settings)
+        self.load_model.assert_called_once_with(self.settings)
+
 
 class SpawnTest(unittest.TestCase):
     def test_the_worker_runs_from_the_state_directory(self):
@@ -89,7 +107,9 @@ class SpawnTest(unittest.TestCase):
         settings = Settings(state_dir=Path("/run/user/1000/push-to-stt"))
         with mock.patch("push_to_stt.session.BackgroundProcess") as process:
             spawn(settings)
-        self.assertEqual(process.return_value.start.call_args.kwargs["cwd"], settings.state_dir)
+        self.assertEqual(
+            process.return_value.start.call_args.kwargs["cwd"], settings.state_dir
+        )
 
 
 if __name__ == "__main__":

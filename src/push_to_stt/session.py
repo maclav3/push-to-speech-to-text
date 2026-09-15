@@ -10,13 +10,15 @@ the hotkey never waits for Whisper.
 from __future__ import annotations
 
 import sys
+import threading
 import time
 from collections import deque
 
+from . import DictationError
 from .background import BackgroundProcess
 from .config import Settings
 from .desktop import close_notification, notify, notify_progress
-from .dictation import transcribe, type_text
+from .dictation import load_model, transcribe, type_text
 from .meter import BAR_WIDTH, bar, tail_loudness
 
 REDRAW_SECONDS = 0.12
@@ -39,6 +41,8 @@ def finish(settings: Settings) -> None:
 
 def run(settings: Settings, interval: float = REDRAW_SECONDS) -> None:
     """Draw the level until interrupted, then write out what was said."""
+    preload = _Preload(settings)
+    preload.begin()
     notification = notify_progress("Recording", bar([]))
     try:
         _draw(settings, notification, interval)
@@ -46,7 +50,35 @@ def run(settings: Settings, interval: float = REDRAW_SECONDS) -> None:
         pass
     finally:
         close_notification(notification)
-    _write_out(settings)
+    _write_out(settings, preload.result())
+
+
+class _Preload:
+    """Loads Whisper while the user is still speaking.
+
+    Loading costs about a second. Spending it during the recording makes it
+    free, because the user is busy talking.
+    """
+
+    def __init__(self, settings: Settings) -> None:
+        self.settings = settings
+        self.model = None
+        self._thread = threading.Thread(target=self._load, daemon=True)
+
+    def begin(self) -> None:
+        self._thread.start()
+
+    def result(self):
+        """The loaded model, or None if the load failed."""
+        self._thread.join()
+        return self.model
+
+    def _load(self) -> None:
+        try:
+            self.model = load_model(self.settings)
+        except DictationError:
+            # Transcription loads the model again and reports the failure there.
+            self.model = None
 
 
 def _draw(settings: Settings, notification: int, interval: float) -> None:
@@ -57,14 +89,14 @@ def _draw(settings: Settings, notification: int, interval: float) -> None:
         time.sleep(interval)
 
 
-def _write_out(settings: Settings) -> None:
+def _write_out(settings: Settings, model=None) -> None:
     wav = settings.wav_file
     # A cancelled dictation deletes the recording, which leaves nothing to do.
     if not wav.exists() or wav.stat().st_size == 0:
         return
     notify("Transcribing", f"Model: {settings.model}")
     try:
-        text = transcribe(wav, settings)
+        text = transcribe(wav, settings, model=model)
     finally:
         wav.unlink(missing_ok=True)
     if not text:

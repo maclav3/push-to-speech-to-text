@@ -63,9 +63,19 @@ def load_model(settings: Settings):
     # instead of at start-up, where it would delay the recording.
     import faster_whisper
 
-    return faster_whisper.WhisperModel(
-        settings.model, device="cpu", compute_type="int8", cpu_threads=os.cpu_count()
-    )
+    try:
+        return faster_whisper.WhisperModel(
+            settings.model,
+            device="cpu",
+            compute_type="int8",
+            cpu_threads=os.cpu_count(),
+        )
+    except Exception as error:
+        # A download failure or a bad model name would otherwise kill the worker
+        # in silence, because its output goes nowhere.
+        raise DictationError(
+            f"Cannot load the {settings.model} model: {error}"
+        ) from error
 
 
 def transcribe(wav: Path, settings: Settings, model=None) -> str:
