@@ -25,7 +25,10 @@ REDRAW_SECONDS = 0.12
 def spawn(settings: Settings) -> None:
     """Start the worker beside the recorder, in its own process."""
     BackgroundProcess(settings.session_pid_file).start(
-        [sys.executable, "-m", "push_to_stt", "session"]
+        [sys.executable, "-m", "push_to_stt", "session"],
+        # onnxruntime drops a telemetry file into the current directory, so the
+        # worker runs from our own directory rather than wherever you were.
+        cwd=settings.state_dir,
     )
 
 

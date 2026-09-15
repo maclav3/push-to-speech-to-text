@@ -43,6 +43,11 @@ class BackgroundProcessTest(unittest.TestCase):
         self.assertTrue(self.popen.call_args.kwargs["start_new_session"])
         self.assertIsNotNone(self.popen.call_args.kwargs["stdout"])
 
+    def test_it_can_be_given_a_working_directory(self):
+        """Some libraries drop files into the current directory, so it must be ours."""
+        self.process.start(["sleep", "30"], cwd=Path("/tmp"))
+        self.assertEqual(self.popen.call_args.kwargs["cwd"], Path("/tmp"))
+
     def test_a_missing_program_names_it(self):
         self.popen.side_effect = FileNotFoundError
         with self.assertRaises(DictationError) as caught:

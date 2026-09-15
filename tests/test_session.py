@@ -7,7 +7,7 @@ from unittest import mock
 
 from push_to_stt.config import Settings
 from push_to_stt.meter import BAR_WIDTH
-from push_to_stt.session import run
+from push_to_stt.session import run, spawn
 
 
 class SessionRunTest(unittest.TestCase):
@@ -81,6 +81,15 @@ class SessionRunTest(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             run(self.settings)
         self.assertFalse(self.settings.wav_file.exists())
+
+
+class SpawnTest(unittest.TestCase):
+    def test_the_worker_runs_from_the_state_directory(self):
+        """onnxruntime writes a telemetry file into the current directory."""
+        settings = Settings(state_dir=Path("/run/user/1000/push-to-stt"))
+        with mock.patch("push_to_stt.session.BackgroundProcess") as process:
+            spawn(settings)
+        self.assertEqual(process.return_value.start.call_args.kwargs["cwd"], settings.state_dir)
 
 
 if __name__ == "__main__":

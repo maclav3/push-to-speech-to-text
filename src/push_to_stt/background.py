@@ -39,11 +39,12 @@ class BackgroundProcess:
     def is_running(self) -> bool:
         return self.pid is not None
 
-    def start(self, command: list[str]) -> None:
+    def start(self, command: list[str], cwd: Path | None = None) -> None:
         self.pid_file.parent.mkdir(parents=True, exist_ok=True)
         try:
             process = subprocess.Popen(
                 command,
+                cwd=cwd,
                 start_new_session=True,
                 stdin=subprocess.DEVNULL,
                 stdout=subprocess.DEVNULL,
