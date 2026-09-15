@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Maciej Bratek
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Hotkey dictation for Linux.
 
 The package drives three outside programs: arecord for the microphone, ydotool

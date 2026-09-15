@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Maciej Bratek
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Desktop integration: notifications, /dev/uinput access, and the GNOME hotkey."""
 
 from __future__ import annotations

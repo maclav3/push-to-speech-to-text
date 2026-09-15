@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Maciej Bratek
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Command line interface. The hotkey runs `push-to-stt toggle`."""
 
 from __future__ import annotations

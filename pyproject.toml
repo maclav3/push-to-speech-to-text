@@ -4,7 +4,8 @@ version = "0.1.0"
 description = "Hotkey dictation for Linux. Whisper types into the focused text field."
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE", "COPYRIGHT"]
 dependencies = ["faster-whisper>=1.0"]
 
 [project.optional-dependencies]
@@ -14,7 +15,7 @@ dev = ["ruff"]
 push-to-stt = "push_to_stt.cli:main"
 
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]

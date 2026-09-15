@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Maciej Bratek
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Record the microphone, transcribe the audio, and type the text."""
 
 from __future__ import annotations

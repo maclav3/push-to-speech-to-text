@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Maciej Bratek
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Settings, read once from the environment.
 
 A GNOME hotkey starts the tool with an empty shell environment. Put overrides in

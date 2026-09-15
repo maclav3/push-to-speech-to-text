@@ -115,4 +115,7 @@ in the [conventional commits](https://www.conventionalcommits.org/) style.
 
 ## Licence
 
-MIT. See `LICENSE`.
+GNU General Public License, version 3 or later. See `LICENSE`.
+
+You may use, change and share this program. If you share a changed version,
+you must share its source under the same licence.
