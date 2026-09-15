@@ -1,6 +1,22 @@
 # CHANGELOG
 
 
+## v0.1.1 (2026-09-15)
+
+### Chores
+
+- Relicense under the GPL version 3 or later
+  ([`b4b0be6`](https://github.com/maclav3/push-to-speech-to-text/commit/b4b0be692b56a0add8087472b20e4d377c88e5d6))
+
+A changed version of this tool must now stay open. MIT allowed anyone to take it closed, which is
+  not what I want for it.
+
+The GPL text names no copyright holder, so COPYRIGHT carries my notice next to it. Every source file
+  carries an SPDX tag, which states the same thing in two lines that tools can read.
+
+The SPDX licence field needs setuptools 77, so the build requirement moves up with it.
+
+
 ## v0.1.0 (2026-09-15)
 
 ### Build System
