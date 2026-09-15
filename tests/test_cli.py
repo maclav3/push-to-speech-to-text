@@ -3,7 +3,6 @@
 import io
 import tempfile
 import unittest
-from pathlib import Path
 from unittest import mock
 
 from push_to_stt import DictationError
@@ -22,46 +21,51 @@ class CliTest(unittest.TestCase):
 
         self.recorder = mock.patch("push_to_stt.cli.Recorder").start().return_value
         self.recorder.is_recording = False
-        self.recorder.stop.return_value = Path(directory.name) / "take.wav"
-        self.recorder.stop.return_value.write_bytes(b"RIFF fake wav")
-        self.transcribe = mock.patch(
-            "push_to_stt.cli.transcribe", return_value="hello world"
-        ).start()
-        self.type_text = mock.patch("push_to_stt.cli.type_text").start()
-        self.meter = mock.patch("push_to_stt.cli.meter").start()
+        self.session = mock.patch("push_to_stt.cli.session").start()
 
     def test_toggle_starts_when_nothing_is_recording(self):
         self.assertEqual(main(["toggle"]), 0)
         self.recorder.start.assert_called_once()
-        self.type_text.assert_not_called()
+        self.recorder.stop.assert_not_called()
 
-    def test_toggle_stops_and_types_when_recording(self):
+    def test_toggle_stops_when_recording(self):
         self.recorder.is_recording = True
         self.assertEqual(main(["toggle"]), 0)
         self.recorder.stop.assert_called_once()
-        self.type_text.assert_called_once_with("hello world")
 
     def test_no_command_means_toggle(self):
         self.assertEqual(main([]), 0)
         self.recorder.start.assert_called_once()
 
-    def test_silence_types_nothing(self):
-        self.transcribe.return_value = ""
-        self.assertEqual(main(["stop"]), 0)
-        self.type_text.assert_not_called()
+    def test_start_puts_the_worker_on_screen(self):
+        main(["start"])
+        self.session.spawn.assert_called_once()
 
-    def test_the_recording_is_deleted_even_when_whisper_fails(self):
-        self.transcribe.side_effect = DictationError("engine broke")
+    def test_stop_ends_the_recording_before_it_tells_the_worker(self):
+        """The worker reads the file, so arecord must have closed it first."""
+        order = []
+        self.recorder.stop.side_effect = lambda: order.append("recorder")
+        self.session.finish.side_effect = lambda *_: order.append("worker")
+        main(["stop"])
+        self.assertEqual(order, ["recorder", "worker"])
+
+    def test_a_failed_recording_still_tells_the_worker(self):
+        """Otherwise the meter would stay on screen for ever."""
+        self.recorder.stop.side_effect = DictationError("No audio was recorded.")
         self.assertEqual(main(["stop"]), 1)
-        self.assertFalse(self.recorder.stop.return_value.exists())
+        self.session.finish.assert_called_once()
+
+    def test_cancel_throws_the_recording_away_before_telling_the_worker(self):
+        """The worker transcribes whatever it finds, so the file must go first."""
+        order = []
+        self.recorder.cancel.side_effect = lambda: order.append("recording deleted")
+        self.session.finish.side_effect = lambda *_: order.append("worker")
+        main(["cancel"])
+        self.assertEqual(order, ["recording deleted", "worker"])
 
     def test_a_failure_reports_exit_code_one(self):
         self.recorder.start.side_effect = DictationError("already recording")
         self.assertEqual(main(["start"]), 1)
-
-    def test_cancel_reaches_the_recorder(self):
-        self.assertEqual(main(["cancel"]), 0)
-        self.recorder.cancel.assert_called_once()
 
     def test_setup_grants_access_then_binds_the_hotkey(self):
         with (
@@ -73,46 +77,13 @@ class CliTest(unittest.TestCase):
         bind.assert_called_once_with("<Super>x")
 
 
-class MeterTest(unittest.TestCase):
-    """The level meter runs beside the recorder and must never outlive it."""
-
-    def setUp(self) -> None:
-        CliTest.setUp(self)
-
-    def test_start_puts_the_meter_on_screen(self):
-        main(["start"])
-        self.meter.spawn.assert_called_once()
-
-    def test_stop_takes_the_meter_down(self):
-        self.recorder.is_recording = True
-        main(["stop"])
-        self.meter.stop.assert_called_once()
-
-    def test_the_meter_goes_before_the_text_is_typed(self):
-        """Whisper takes seconds, so the meter must not sit there during it."""
-        order = []
-        self.meter.stop.side_effect = lambda *_: order.append("meter")
-        self.transcribe.side_effect = lambda *_: order.append("transcribe") or "hello"
-        main(["stop"])
-        self.assertEqual(order, ["meter", "transcribe"])
-
-    def test_cancel_takes_the_meter_down(self):
-        main(["cancel"])
-        self.meter.stop.assert_called_once()
-
-    def test_a_failed_recording_still_takes_the_meter_down(self):
-        self.recorder.stop.side_effect = DictationError("No audio was recorded.")
-        self.assertEqual(main(["stop"]), 1)
-        self.meter.stop.assert_called_once()
-
-
 class HelpTest(unittest.TestCase):
     def test_the_help_never_shows_argparse_internals(self):
         self.assertNotIn("SUPPRESS", build_parser().format_help())
 
-    def test_the_internal_meter_command_still_works(self):
-        args = build_parser().parse_args(["meter"])
-        self.assertEqual(args.run.__name__, "draw_meter")
+    def test_the_internal_session_command_still_works(self):
+        args = build_parser().parse_args(["session"])
+        self.assertEqual(args.run.__name__, "run_session")
 
 
 if __name__ == "__main__":

@@ -5,10 +5,8 @@ import math
 import tempfile
 import unittest
 from pathlib import Path
-from unittest import mock
 
-from push_to_stt.config import Settings
-from push_to_stt.meter import BAR_WIDTH, BLOCKS, HEADER_BYTES, bar, run, tail_loudness
+from push_to_stt.meter import BAR_WIDTH, BLOCKS, HEADER_BYTES, bar, tail_loudness
 
 
 def write_recording(path: Path, samples: list[int]) -> None:
@@ -90,42 +88,6 @@ class BarTest(unittest.TestCase):
         quiet = bar([0.2] * BAR_WIDTH)
         loud = bar([0.8] * BAR_WIDTH)
         self.assertGreater(BLOCKS.index(loud[0]), BLOCKS.index(quiet[0]))
-
-
-class RunTest(unittest.TestCase):
-    """The loop redraws one notification until it is interrupted."""
-
-    def setUp(self) -> None:
-        directory = tempfile.TemporaryDirectory()
-        self.addCleanup(directory.cleanup)
-        self.addCleanup(mock.patch.stopall)
-        self.settings = Settings(state_dir=Path(directory.name))
-
-        self.notify = mock.patch(
-            "push_to_stt.meter.notify_progress", return_value=7
-        ).start()
-        self.close = mock.patch("push_to_stt.meter.close_notification").start()
-        mock.patch("push_to_stt.meter.tail_loudness", return_value=0.5).start()
-        # The loop only ends when it is interrupted, as the stop command does.
-        mock.patch(
-            "push_to_stt.meter.time.sleep", side_effect=[None, None, KeyboardInterrupt]
-        ).start()
-
-    def test_it_redraws_the_first_notification(self):
-        run(self.settings)
-        replace_ids = [
-            call.kwargs.get("replace_id") for call in self.notify.call_args_list
-        ]
-        self.assertIsNone(replace_ids[0])
-        self.assertEqual(set(replace_ids[1:]), {7})
-
-    def test_it_draws_a_bar_of_the_right_width(self):
-        run(self.settings)
-        self.assertEqual(len(self.notify.call_args.args[1]), BAR_WIDTH)
-
-    def test_it_closes_the_notification_when_interrupted(self):
-        run(self.settings)
-        self.close.assert_called_once_with(7)
 
 
 if __name__ == "__main__":

@@ -8,41 +8,32 @@ import argparse
 import sys
 from argparse import Namespace
 
-from . import DictationError, meter
+from . import DictationError, session
 from .config import Settings
 from .desktop import DEFAULT_HOTKEY, bind_hotkey, grant_uinput_access, notify
-from .dictation import Recorder, transcribe, type_text
+from .dictation import Recorder
 
 
 def start(args: Namespace, settings: Settings) -> None:
     """Start recording."""
     Recorder(settings).start()
-    # The meter is the recording indicator, so no separate popup is needed.
-    meter.spawn(settings)
+    # The worker is the recording indicator, so no separate popup is needed.
+    session.spawn(settings)
 
 
 def stop(args: Namespace, settings: Settings) -> None:
-    """Stop recording, then transcribe and type the text."""
+    """Stop recording. The worker transcribes and types what you said."""
     try:
-        wav = Recorder(settings).stop()
+        Recorder(settings).stop()
     finally:
-        meter.stop(settings)
-    notify("Transcribing", f"Model: {settings.model}")
-    try:
-        text = transcribe(wav, settings)
-    finally:
-        wav.unlink(missing_ok=True)
-    if not text:
-        notify("Nothing heard", "The recording held no speech.")
-        return
-    type_text(text)
-    notify("Typed", text)
+        session.finish(settings)
 
 
 def cancel(args: Namespace, settings: Settings) -> None:
     """Stop recording and throw the audio away."""
-    meter.stop(settings)
+    # Deleting the recording first leaves the worker nothing to transcribe.
     Recorder(settings).cancel()
+    session.finish(settings)
     notify("Dictation cancelled")
 
 
@@ -61,9 +52,9 @@ def setup(args: Namespace, settings: Settings) -> None:
     print(f"\nReady. Press {args.hotkey} to record. Press it again to type the text.")
 
 
-def draw_meter(args: Namespace, settings: Settings) -> None:
-    """Draw the recording level until interrupted. The start command runs this."""
-    meter.run(settings)
+def run_session(args: Namespace, settings: Settings) -> None:
+    """Draw the level, then transcribe and type. The start command runs this."""
+    session.run(settings)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -80,7 +71,7 @@ def build_parser() -> argparse.ArgumentParser:
     setup_parser.add_argument("--hotkey", default=DEFAULT_HOTKEY)
     setup_parser.set_defaults(run=setup)
     # No help text, so argparse keeps this internal command out of the list.
-    commands.add_parser("meter").set_defaults(run=draw_meter)
+    commands.add_parser("session").set_defaults(run=run_session)
     return parser
 
 
