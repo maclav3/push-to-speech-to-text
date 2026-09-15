@@ -1,6 +1,49 @@
 # CHANGELOG
 
 
+## v0.2.0 (2026-09-15)
+
+### Documentation
+
+- Describe the recording indicator
+  ([`a4b14f8`](https://github.com/maclav3/push-to-speech-to-text/commit/a4b14f8f8a657a56e4e93599f4ea46ecf6ad20b0))
+
+The README now says what the meter looks like and why it is a notification rather than a floating
+  window. A flat bar means the wrong microphone, so that gets a line too.
+
+### Features
+
+- Measure the recording level and draw it as blocks
+  ([`a8d3178`](https://github.com/maclav3/push-to-speech-to-text/commit/a8d31788da785ebfd68e8a00d60f164ff8724f8e))
+
+The meter reads the tail of the file the recorder is already writing, so it needs no second capture
+  stream and cannot disturb the recording.
+
+Loudness is reported in decibels against a floor of -50 dB. A linear scale barely moves for speech,
+  because the ear hears loudness logarithmically.
+
+- Show a live level meter while recording
+  ([`436c05a`](https://github.com/maclav3/push-to-speech-to-text/commit/436c05a9f1492df5f9a8cdc05649d515c75e01e4))
+
+GNOME draws its own notifications above every window, which is the only way an ordinary program can
+  put something on top on Wayland. The meter redraws one critical notification about eight times a
+  second.
+
+The meter runs in its own process beside the recorder, because the start command exits at once. It
+  comes down in a finally block, so a failed recording cannot leave it stuck on screen.
+
+### Refactoring
+
+- Extract BackgroundProcess from Recorder
+  ([`6df6d81`](https://github.com/maclav3/push-to-speech-to-text/commit/6df6d81f7f70841fd8f7ca5017a185c89d1c6830))
+
+The recorder tracks a detached process through a PID file. The recording indicator needs the same
+  handling, so the mechanism moves into its own class rather than being written twice.
+
+Recorder keeps only what is specific to it: the arecord command line, and what counts as a usable
+  recording.
+
+
 ## v0.1.1 (2026-09-15)
 
 ### Chores
