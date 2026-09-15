@@ -27,6 +27,7 @@ tasks:
     deps: [venv]
     cmds:
       - "{{.VENV_BIN}}/ruff check src tests"
+      - "{{.VENV_BIN}}/ruff format --check src tests"
 
   test:
     desc: Run the tests
