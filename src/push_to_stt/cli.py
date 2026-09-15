@@ -8,7 +8,7 @@ import argparse
 import sys
 from argparse import Namespace
 
-from . import DictationError
+from . import DictationError, meter
 from .config import Settings
 from .desktop import DEFAULT_HOTKEY, bind_hotkey, grant_uinput_access, notify
 from .dictation import Recorder, transcribe, type_text
@@ -17,12 +17,16 @@ from .dictation import Recorder, transcribe, type_text
 def start(args: Namespace, settings: Settings) -> None:
     """Start recording."""
     Recorder(settings).start()
-    notify("Recording", "Press the hotkey again to transcribe.")
+    # The meter is the recording indicator, so no separate popup is needed.
+    meter.spawn(settings)
 
 
 def stop(args: Namespace, settings: Settings) -> None:
     """Stop recording, then transcribe and type the text."""
-    wav = Recorder(settings).stop()
+    try:
+        wav = Recorder(settings).stop()
+    finally:
+        meter.stop(settings)
     notify("Transcribing", f"Model: {settings.model}")
     try:
         text = transcribe(wav, settings)
@@ -37,6 +41,7 @@ def stop(args: Namespace, settings: Settings) -> None:
 
 def cancel(args: Namespace, settings: Settings) -> None:
     """Stop recording and throw the audio away."""
+    meter.stop(settings)
     Recorder(settings).cancel()
     notify("Dictation cancelled")
 
@@ -56,6 +61,11 @@ def setup(args: Namespace, settings: Settings) -> None:
     print(f"\nReady. Press {args.hotkey} to record. Press it again to type the text.")
 
 
+def draw_meter(args: Namespace, settings: Settings) -> None:
+    """Draw the recording level until interrupted. The start command runs this."""
+    meter.run(settings)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="push-to-stt", description=__doc__)
     parser.set_defaults(run=toggle)
@@ -69,6 +79,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     setup_parser.add_argument("--hotkey", default=DEFAULT_HOTKEY)
     setup_parser.set_defaults(run=setup)
+    commands.add_parser("meter", help=argparse.SUPPRESS).set_defaults(run=draw_meter)
     return parser
 
 

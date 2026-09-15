@@ -43,3 +43,7 @@ class Settings:
     @property
     def wav_file(self) -> Path:
         return self.state_dir / "take.wav"
+
+    @property
+    def meter_pid_file(self) -> Path:
+        return self.state_dir / "meter.pid"

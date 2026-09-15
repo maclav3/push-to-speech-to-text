@@ -16,6 +16,8 @@ from pathlib import Path
 from . import DictationError, missing_program
 
 NOTIFY_TAG = "string:x-canonical-private-synchronous:push-to-stt"
+NOTIFY_SERVICE = "org.freedesktop.Notifications"
+NOTIFY_OBJECT = "/org/freedesktop/Notifications"
 UINPUT_DEVICE = Path("/dev/uinput")
 UDEV_RULE_PATH = Path("/etc/udev/rules.d/99-uinput-push-to-stt.rules")
 UDEV_RULE = (
@@ -34,6 +36,58 @@ def notify(summary: str, body: str = "") -> None:
     try:
         # The tag replaces the previous popup instead of stacking popups.
         subprocess.run(["notify-send", "-h", NOTIFY_TAG, summary, body], check=False)
+    except FileNotFoundError:
+        pass
+
+
+def notify_progress(summary: str, body: str, replace_id: int = 0) -> int:
+    """Show a notification that stays on screen, and return its id.
+
+    GNOME draws its own notifications above every window, which is the only way
+    an ordinary program can put something on top on Wayland. Critical urgency
+    stops the banner from fading after a few seconds.
+    """
+    command = [
+        "notify-send",
+        "--urgency=critical",
+        "--print-id",
+        "--app-name=push-to-stt",
+    ]
+    if replace_id:
+        command += ["--replace-id", str(replace_id)]
+    command += [summary, body]
+    try:
+        result = subprocess.run(command, capture_output=True, text=True, check=False)
+    except FileNotFoundError:
+        return 0
+    try:
+        return int(result.stdout.strip())
+    except ValueError:
+        return 0
+
+
+def close_notification(notification_id: int) -> None:
+    """Take the notification off the screen at once, without waiting for a timeout."""
+    if not notification_id:
+        return
+    try:
+        subprocess.run(
+            [
+                "gdbus",
+                "call",
+                "--session",
+                "--dest",
+                NOTIFY_SERVICE,
+                "--object-path",
+                NOTIFY_OBJECT,
+                "--method",
+                f"{NOTIFY_SERVICE}.CloseNotification",
+                str(notification_id),
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
     except FileNotFoundError:
         pass
 

@@ -10,8 +10,15 @@ from __future__ import annotations
 
 import array
 import math
+import sys
+import time
+from collections import deque
 from collections.abc import Sequence
 from pathlib import Path
+
+from .background import BackgroundProcess
+from .config import Settings
+from .desktop import close_notification, notify_progress
 
 BLOCKS = "▁▂▃▄▅▆▇█"
 BAR_WIDTH = 12
@@ -20,6 +27,7 @@ HEADER_BYTES = 44
 WINDOW_BYTES = 4096
 SAMPLE_PEAK = 32768
 FLOOR_DB = -50.0
+REDRAW_SECONDS = 0.12
 
 
 def tail_loudness(wav: Path, window_bytes: int = WINDOW_BYTES) -> float:
@@ -61,3 +69,29 @@ def _loudness(samples: array.array) -> float:
     # Ears hear loudness on a log scale, so a linear bar would barely move.
     decibels = 20 * math.log10(rms)
     return min(1.0, max(0.0, (decibels - FLOOR_DB) / -FLOOR_DB))
+
+
+def spawn(settings: Settings) -> None:
+    """Start the meter beside the recorder, in its own process."""
+    BackgroundProcess(settings.meter_pid_file).start(
+        [sys.executable, "-m", "push_to_stt", "meter"]
+    )
+
+
+def stop(settings: Settings) -> None:
+    BackgroundProcess(settings.meter_pid_file).stop()
+
+
+def run(settings: Settings, interval: float = REDRAW_SECONDS) -> None:
+    """Redraw the level until the stop command interrupts this process."""
+    history: deque[float] = deque([0.0] * BAR_WIDTH, maxlen=BAR_WIDTH)
+    notification = notify_progress("Recording", bar(history))
+    try:
+        while True:
+            history.append(tail_loudness(settings.wav_file))
+            notify_progress("Recording", bar(history), replace_id=notification)
+            time.sleep(interval)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        close_notification(notification)

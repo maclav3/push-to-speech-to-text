@@ -28,6 +28,7 @@ class CliTest(unittest.TestCase):
             "push_to_stt.cli.transcribe", return_value="hello world"
         ).start()
         self.type_text = mock.patch("push_to_stt.cli.type_text").start()
+        self.meter = mock.patch("push_to_stt.cli.meter").start()
 
     def test_toggle_starts_when_nothing_is_recording(self):
         self.assertEqual(main(["toggle"]), 0)
@@ -70,6 +71,39 @@ class CliTest(unittest.TestCase):
             self.assertEqual(main(["setup", "--hotkey", "<Super>x"]), 0)
         grant.assert_called_once()
         bind.assert_called_once_with("<Super>x")
+
+
+class MeterTest(unittest.TestCase):
+    """The level meter runs beside the recorder and must never outlive it."""
+
+    def setUp(self) -> None:
+        CliTest.setUp(self)
+
+    def test_start_puts_the_meter_on_screen(self):
+        main(["start"])
+        self.meter.spawn.assert_called_once()
+
+    def test_stop_takes_the_meter_down(self):
+        self.recorder.is_recording = True
+        main(["stop"])
+        self.meter.stop.assert_called_once()
+
+    def test_the_meter_goes_before_the_text_is_typed(self):
+        """Whisper takes seconds, so the meter must not sit there during it."""
+        order = []
+        self.meter.stop.side_effect = lambda *_: order.append("meter")
+        self.transcribe.side_effect = lambda *_: order.append("transcribe") or "hello"
+        main(["stop"])
+        self.assertEqual(order, ["meter", "transcribe"])
+
+    def test_cancel_takes_the_meter_down(self):
+        main(["cancel"])
+        self.meter.stop.assert_called_once()
+
+    def test_a_failed_recording_still_takes_the_meter_down(self):
+        self.recorder.stop.side_effect = DictationError("No audio was recorded.")
+        self.assertEqual(main(["stop"]), 1)
+        self.meter.stop.assert_called_once()
 
 
 if __name__ == "__main__":
