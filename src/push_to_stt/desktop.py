@@ -16,10 +16,14 @@ from . import DictationError, missing_program
 NOTIFY_TAG = "string:x-canonical-private-synchronous:push-to-stt"
 UINPUT_DEVICE = Path("/dev/uinput")
 UDEV_RULE_PATH = Path("/etc/udev/rules.d/99-uinput-push-to-stt.rules")
-UDEV_RULE = 'KERNEL=="uinput", GROUP="input", MODE="0660", OPTIONS+="static_node=uinput"'
+UDEV_RULE = (
+    'KERNEL=="uinput", GROUP="input", MODE="0660", OPTIONS+="static_node=uinput"'
+)
 
 SCHEMA = "org.gnome.settings-daemon.plugins.media-keys"
-KEYBINDING_PATH = "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/push-to-stt/"
+KEYBINDING_PATH = (
+    "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/push-to-stt/"
+)
 DEFAULT_HOTKEY = "<Control><Alt>space"
 
 
@@ -91,8 +95,13 @@ def _in_input_group() -> bool:
 
 def _sudo(command: list[str], input: str | None = None) -> None:
     try:
-        subprocess.run(["sudo", *command], input=input, text=True,
-                       stdout=subprocess.DEVNULL, check=True)
+        subprocess.run(
+            ["sudo", *command],
+            input=input,
+            text=True,
+            stdout=subprocess.DEVNULL,
+            check=True,
+        )
     except FileNotFoundError:
         raise missing_program("sudo") from None
     except subprocess.CalledProcessError as error:
@@ -100,8 +109,9 @@ def _sudo(command: list[str], input: str | None = None) -> None:
 
 
 def _gsettings_get(schema: str, key: str) -> str:
-    return subprocess.run(["gsettings", "get", schema, key],
-                          capture_output=True, text=True, check=True).stdout
+    return subprocess.run(
+        ["gsettings", "get", schema, key], capture_output=True, text=True, check=True
+    ).stdout
 
 
 def _gsettings_set(schema: str, key: str, value: str) -> None:

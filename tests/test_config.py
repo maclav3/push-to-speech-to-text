@@ -23,11 +23,13 @@ class SettingsFromEnvTest(unittest.TestCase):
         self.assertIsNone(settings.audio_device)
 
     def test_reads_every_override(self):
-        settings = Settings.from_env({
-            "STT_MODEL": "medium",
-            "STT_LANGUAGE": "pl",
-            "STT_AUDIO_DEVICE": "hw:1,0",
-        })
+        settings = Settings.from_env(
+            {
+                "STT_MODEL": "medium",
+                "STT_LANGUAGE": "pl",
+                "STT_AUDIO_DEVICE": "hw:1,0",
+            }
+        )
         self.assertEqual(settings.model, "medium")
         self.assertEqual(settings.language, "pl")
         self.assertEqual(settings.audio_device, "hw:1,0")

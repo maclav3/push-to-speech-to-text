@@ -59,8 +59,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.set_defaults(run=toggle)
     commands = parser.add_subparsers()
     for action in (toggle, start, stop, cancel):
-        commands.add_parser(action.__name__, help=action.__doc__).set_defaults(run=action)
-    setup_parser = commands.add_parser("setup", help="Grant access and bind the hotkey.")
+        commands.add_parser(action.__name__, help=action.__doc__).set_defaults(
+            run=action
+        )
+    setup_parser = commands.add_parser(
+        "setup", help="Grant access and bind the hotkey."
+    )
     setup_parser.add_argument("--hotkey", default=DEFAULT_HOTKEY)
     setup_parser.set_defaults(run=setup)
     return parser

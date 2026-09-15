@@ -83,9 +83,17 @@ class Recorder:
         if self.settings.audio_device:
             command += ["--device", self.settings.audio_device]
         # Whisper wants 16 kHz mono, so record that and skip a conversion step.
-        command += ["--format", "S16_LE", "--rate", str(SAMPLE_RATE),
-                    "--channels", "1", "--file-type", "wav",
-                    str(self.settings.wav_file)]
+        command += [
+            "--format",
+            "S16_LE",
+            "--rate",
+            str(SAMPLE_RATE),
+            "--channels",
+            "1",
+            "--file-type",
+            "wav",
+            str(self.settings.wav_file),
+        ]
         return command
 
 
@@ -107,8 +115,9 @@ def type_text(text: str) -> None:
     """Type the text into whichever field has focus."""
     try:
         # Reading from stdin keeps text that starts with a dash out of the parser.
-        result = subprocess.run(["ydotool", "type", "--file", "-"],
-                                input=text, text=True, check=False)
+        result = subprocess.run(
+            ["ydotool", "type", "--file", "-"], input=text, text=True, check=False
+        )
     except FileNotFoundError:
         raise missing_program("ydotool") from None
     if result.returncode != 0:

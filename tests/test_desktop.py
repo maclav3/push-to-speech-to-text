@@ -23,8 +23,9 @@ class KeybindingListTest(unittest.TestCase):
 
 class NotifyTest(unittest.TestCase):
     def test_a_missing_notify_send_is_not_an_error(self):
-        with mock.patch("push_to_stt.desktop.subprocess.run",
-                                 side_effect=FileNotFoundError):
+        with mock.patch(
+            "push_to_stt.desktop.subprocess.run", side_effect=FileNotFoundError
+        ):
             notify("hello")
 
 

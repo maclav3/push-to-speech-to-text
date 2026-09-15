@@ -22,8 +22,9 @@ class CliTest(unittest.TestCase):
         self.recorder.is_recording = False
         self.recorder.stop.return_value = Path(directory.name) / "take.wav"
         self.recorder.stop.return_value.write_bytes(b"RIFF fake wav")
-        self.transcribe = mock.patch("push_to_stt.cli.transcribe",
-                                     return_value="hello world").start()
+        self.transcribe = mock.patch(
+            "push_to_stt.cli.transcribe", return_value="hello world"
+        ).start()
         self.type_text = mock.patch("push_to_stt.cli.type_text").start()
 
     def test_toggle_starts_when_nothing_is_recording(self):
@@ -60,8 +61,10 @@ class CliTest(unittest.TestCase):
         self.recorder.cancel.assert_called_once()
 
     def test_setup_grants_access_then_binds_the_hotkey(self):
-        with mock.patch("push_to_stt.cli.grant_uinput_access") as grant, \
-             mock.patch("push_to_stt.cli.bind_hotkey") as bind:
+        with (
+            mock.patch("push_to_stt.cli.grant_uinput_access") as grant,
+            mock.patch("push_to_stt.cli.bind_hotkey") as bind,
+        ):
             self.assertEqual(main(["setup", "--hotkey", "<Super>x"]), 0)
         grant.assert_called_once()
         bind.assert_called_once_with("<Super>x")

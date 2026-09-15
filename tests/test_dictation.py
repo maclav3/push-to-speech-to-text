@@ -36,8 +36,9 @@ class RecorderTest(unittest.TestCase):
         kill.start()
         self.addCleanup(kill.stop)
 
-        self.popen = mock.patch("push_to_stt.dictation.subprocess.Popen",
-                                side_effect=self.fake_popen).start()
+        self.popen = mock.patch(
+            "push_to_stt.dictation.subprocess.Popen", side_effect=self.fake_popen
+        ).start()
         self.addCleanup(mock.patch.stopall)
 
     def fake_popen(self, command, **kwargs):
@@ -59,8 +60,9 @@ class RecorderTest(unittest.TestCase):
         self.assertEqual(command[command.index("--channels") + 1], "1")
 
     def test_start_passes_the_chosen_audio_device(self):
-        Recorder(Settings(state_dir=self.settings.state_dir,
-                          audio_device="hw:1,0")).start()
+        Recorder(
+            Settings(state_dir=self.settings.state_dir, audio_device="hw:1,0")
+        ).start()
         command = self.popen.call_args.args[0]
         self.assertEqual(command[command.index("--device") + 1], "hw:1,0")
 
@@ -124,10 +126,13 @@ class TypeTextTest(unittest.TestCase):
         self.assertEqual(run.call_args.kwargs["input"], "hello")
 
     def test_a_missing_ydotool_names_the_package(self):
-        with mock.patch("push_to_stt.dictation.subprocess.run",
-                        side_effect=FileNotFoundError):
-            with self.assertRaises(DictationError) as caught:
-                type_text("hello")
+        with (
+            mock.patch(
+                "push_to_stt.dictation.subprocess.run", side_effect=FileNotFoundError
+            ),
+            self.assertRaises(DictationError) as caught,
+        ):
+            type_text("hello")
         self.assertIn("apt install ydotool", str(caught.exception))
 
     def test_a_failure_points_at_the_setup_command(self):
