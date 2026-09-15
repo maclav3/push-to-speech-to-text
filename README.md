@@ -85,7 +85,8 @@ keyboard and no model. They run in well under a second.
 
 - Each dictation loads the Whisper model again, which costs a second or two. A background service would keep it warm.
 - `wtype` cannot work on GNOME, because Mutter does not offer the virtual keyboard protocol. That is why this uses `ydotool`.
-- Membership of the `input` group lets any program on your account read all input devices.
+- `setup` gives the `input` group write access to `/dev/uinput`. Any program that runs as you can then type into any window.
+- Many desktops already put you in the `input` group. That membership already allows reading every input device, which is the larger exposure.
 
 ## Licence
 
