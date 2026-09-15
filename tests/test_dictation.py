@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2026 Maciej Bratek
 # SPDX-License-Identifier: GPL-3.0-or-later
+import os
 import signal
 import tempfile
 import unittest
@@ -8,7 +9,7 @@ from unittest import mock
 
 from push_to_stt import DictationError
 from push_to_stt.config import Settings
-from push_to_stt.dictation import Recorder, type_text
+from push_to_stt.dictation import Recorder, load_model, transcribe, type_text
 
 from .fakes import FakeProcessTable
 
@@ -123,3 +124,38 @@ class TypeTextTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TranscribeTest(unittest.TestCase):
+    """Speed settings that a user would never see, but always feel."""
+
+    def setUp(self) -> None:
+        self.settings = Settings(state_dir=Path("/nowhere"))
+        self.whisper = mock.patch("faster_whisper.WhisperModel").start()
+        self.addCleanup(mock.patch.stopall)
+        self.model = self.whisper.return_value
+        self.model.transcribe.return_value = ([mock.Mock(text=" hello ")], None)
+
+    def test_the_model_uses_every_core(self):
+        load_model(self.settings)
+        self.assertEqual(self.whisper.call_args.kwargs["cpu_threads"], os.cpu_count())
+        self.assertEqual(self.whisper.call_args.kwargs["compute_type"], "int8")
+
+    def test_decoding_takes_the_first_candidate(self):
+        """Searching five candidates costs time and rarely changes the words."""
+        transcribe(Path("take.wav"), self.settings)
+        self.assertEqual(self.model.transcribe.call_args.kwargs["beam_size"], 1)
+
+    def test_silence_is_filtered_out(self):
+        transcribe(Path("take.wav"), self.settings)
+        self.assertTrue(self.model.transcribe.call_args.kwargs["vad_filter"])
+
+    def test_a_ready_model_is_reused_instead_of_loaded(self):
+        """The session loads the model while you speak, then hands it over."""
+        ready = mock.Mock()
+        ready.transcribe.return_value = ([mock.Mock(text="hello")], None)
+        transcribe(Path("take.wav"), self.settings, model=ready)
+        self.whisper.assert_not_called()
+
+    def test_the_text_is_trimmed(self):
+        self.assertEqual(transcribe(Path("take.wav"), self.settings), "hello")

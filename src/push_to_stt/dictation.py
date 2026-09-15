@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 
@@ -56,16 +57,28 @@ class Recorder:
         return command
 
 
-def transcribe(wav: Path, settings: Settings) -> str:
-    """Turn the recording into text. Returns an empty string for silence."""
+def load_model(settings: Settings):
+    """Load Whisper. This costs about a second, so callers reuse the result."""
     # The import pulls in ctranslate2 and costs about a second, so it waits here
     # instead of at start-up, where it would delay the recording.
-    from faster_whisper import WhisperModel
+    import faster_whisper
 
-    model = WhisperModel(settings.model, device="cpu", compute_type="int8")
-    # The voice filter drops silence, which otherwise makes Whisper invent words.
+    return faster_whisper.WhisperModel(
+        settings.model, device="cpu", compute_type="int8", cpu_threads=os.cpu_count()
+    )
+
+
+def transcribe(wav: Path, settings: Settings, model=None) -> str:
+    """Turn the recording into text. Returns an empty string for silence."""
+    if model is None:
+        model = load_model(settings)
     segments, _info = model.transcribe(
-        str(wav), language=settings.language, vad_filter=True
+        str(wav),
+        language=settings.language,
+        # The voice filter drops silence, which otherwise makes Whisper invent words.
+        vad_filter=True,
+        # One candidate instead of five. The extra four rarely change the words.
+        beam_size=1,
     )
     return " ".join(segment.text.strip() for segment in segments).strip()
 
